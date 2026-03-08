@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, CalendarDays, Clock } from 'lucide-react';
+import { Plus, CalendarDays, Clock, Trash2, Edit2 } from 'lucide-react';
 
 const Badge = ({ children, type = 'default' }: any) => {
     const colors: Record<string, string> = {
@@ -17,6 +17,8 @@ const Badge = ({ children, type = 'default' }: any) => {
 
 export default function PlannerView({ mockData, refreshData }: any) {
     const [showModal, setShowModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [currentId, setCurrentId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         proyecto: mockData.proyectos[0]?.nombre || '',
         contenido: '',
@@ -34,26 +36,73 @@ export default function PlannerView({ mockData, refreshData }: any) {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await fetch('/api/planner', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
+            const url = '/api/planner';
+            const method = isEditing ? 'PUT' : 'POST';
+            const body = isEditing ? { ...formData, id: currentId } : formData;
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
 
             if (res.ok) {
                 setShowModal(false);
-                setFormData({ ...formData, contenido: '', grabacion: '', publicacion: '', responsable: '' });
+                resetForm();
                 await refreshData();
             } else {
-                alert('Error al crear la tarea');
+                alert('Error al procesar la tarea');
             }
         } catch (error) {
             console.error(error);
-            alert('Error de red al crear la tarea');
+            alert('Error de red');
         }
         setLoading(false);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('¿Estás seguro de eliminar esta tarea?')) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/planner?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                await refreshData();
+            } else {
+                alert('Error al eliminar');
+            }
+        } catch (error) {
+            console.error(error);
+        }
+        setLoading(false);
+    };
+
+    const handleEdit = (task: any) => {
+        setIsEditing(true);
+        setCurrentId(task.id);
+        setFormData({
+            proyecto: task.proyecto,
+            contenido: task.contenido,
+            formato: task.formato,
+            grabacion: task.grabacion,
+            publicacion: task.publicacion,
+            responsable: task.responsable,
+            estado: task.estado
+        });
+        setShowModal(true);
+    };
+
+    const resetForm = () => {
+        setIsEditing(false);
+        setCurrentId(null);
+        setFormData({
+            proyecto: mockData.proyectos[0]?.nombre || '',
+            contenido: '',
+            formato: 'Reel',
+            grabacion: '',
+            publicacion: '',
+            responsable: '',
+            estado: 'Por grabar'
+        });
     };
 
     return (
@@ -66,7 +115,7 @@ export default function PlannerView({ mockData, refreshData }: any) {
                     <p className="text-slate-500 text-sm mt-1">Gestión de piezas audiovisuales y publicaciones</p>
                 </div>
                 <button
-                    onClick={() => setShowModal(true)}
+                    onClick={() => { resetForm(); setShowModal(true); }}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
                 >
                     <Plus size={16} /> Agregar Tarea
@@ -84,11 +133,12 @@ export default function PlannerView({ mockData, refreshData }: any) {
                                 <th className="pb-3 font-medium">Fechas (Grab/Pub)</th>
                                 <th className="pb-3 font-medium">Responsable</th>
                                 <th className="pb-3 font-medium">Estado</th>
+                                <th className="pb-3 font-medium text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {plannerTasks.map((t: any, i: number) => (
-                                <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                                <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group">
                                     <td className="py-4 text-sm font-medium text-slate-800">{t.contenido}</td>
                                     <td className="py-4 text-sm text-slate-600">{t.proyecto}</td>
                                     <td className="py-4 text-sm text-slate-600">{t.formato}</td>
@@ -98,15 +148,25 @@ export default function PlannerView({ mockData, refreshData }: any) {
                                     </td>
                                     <td className="py-4 text-sm text-slate-600">{t.responsable}</td>
                                     <td className="py-4">
-                                        <Badge type={t.estado === 'Publicado' ? 'success' : t.estado === 'En edición' ? 'warning' : 'info'}>
+                                        <Badge type={t.estado === 'Publicado' || t.estado === 'Programado' ? 'success' : t.estado === 'En edición' ? 'warning' : 'info'}>
                                             {t.estado}
                                         </Badge>
+                                    </td>
+                                    <td className="py-4 text-right">
+                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => handleEdit(t)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button onClick={() => handleDelete(t.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                             {plannerTasks.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="py-8 text-center text-sm text-slate-500">No hay tareas creadas en el planner.</td>
+                                    <td colSpan={7} className="py-8 text-center text-sm text-slate-500">No hay tareas creadas en el planner.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -117,7 +177,7 @@ export default function PlannerView({ mockData, refreshData }: any) {
             {showModal && (
                 <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Nueva Tarea de Contenido</h3>
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">{isEditing ? 'Editar Tarea' : 'Nueva Tarea de Contenido'}</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
 
                             <div>
@@ -126,7 +186,7 @@ export default function PlannerView({ mockData, refreshData }: any) {
                                     required type="text"
                                     value={formData.contenido}
                                     onChange={e => setFormData({ ...formData, contenido: e.target.value })}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                     placeholder="Ej: Video explicativo del servicio"
                                 />
                             </div>
@@ -137,7 +197,7 @@ export default function PlannerView({ mockData, refreshData }: any) {
                                     <select
                                         value={formData.proyecto}
                                         onChange={e => setFormData({ ...formData, proyecto: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                     >
                                         {mockData.proyectos.map((p: any) => (
                                             <option key={p.id} value={p.nombre}>{p.nombre}</option>
@@ -149,7 +209,7 @@ export default function PlannerView({ mockData, refreshData }: any) {
                                     <select
                                         value={formData.formato}
                                         onChange={e => setFormData({ ...formData, formato: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                     >
                                         <option value="Reel">Reel / TikTok</option>
                                         <option value="Carrusel">Carrusel</option>
@@ -162,21 +222,23 @@ export default function PlannerView({ mockData, refreshData }: any) {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Fecha de Grabación</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Grabación</label>
                                     <input
-                                        type="date"
+                                        type="text"
                                         value={formData.grabacion}
                                         onChange={e => setFormData({ ...formData, grabacion: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                                        placeholder="Ej: 2024-11-20"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Fecha de Publicación</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Publicación</label>
                                     <input
-                                        type="date"
+                                        type="text"
                                         value={formData.publicacion}
                                         onChange={e => setFormData({ ...formData, publicacion: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                                        placeholder="Ej: 2024-11-25"
                                     />
                                 </div>
                             </div>
@@ -188,7 +250,7 @@ export default function PlannerView({ mockData, refreshData }: any) {
                                         type="text"
                                         value={formData.responsable}
                                         onChange={e => setFormData({ ...formData, responsable: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                         placeholder="Ej: Editor 1"
                                     />
                                 </div>
@@ -197,11 +259,11 @@ export default function PlannerView({ mockData, refreshData }: any) {
                                     <select
                                         value={formData.estado}
                                         onChange={e => setFormData({ ...formData, estado: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                     >
                                         <option value="Por Grabar">Por Grabar</option>
                                         <option value="En Edición">En Edición</option>
-                                        <option value="Aprobación">En Aprobación</option>
+                                        <option value="En Aprobación">En Aprobación</option>
                                         <option value="Programado">Programado</option>
                                         <option value="Publicado">Publicado</option>
                                     </select>
@@ -221,7 +283,7 @@ export default function PlannerView({ mockData, refreshData }: any) {
                                     disabled={loading}
                                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                                 >
-                                    {loading ? 'Guardando...' : 'Guardar Tarea'}
+                                    {loading ? 'Procesando...' : isEditing ? 'Actualizar' : 'Guardar'}
                                 </button>
                             </div>
                         </form>

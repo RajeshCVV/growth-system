@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, FolderKanban } from 'lucide-react';
+import { Plus, FolderKanban, Trash2, Edit2 } from 'lucide-react';
 
 const Badge = ({ children, type = 'default' }: any) => {
     const colors: Record<string, string> = {
@@ -17,6 +17,8 @@ const Badge = ({ children, type = 'default' }: any) => {
 
 export default function ProyectosView({ currentEmpresa, mockData, refreshData }: any) {
     const [showModal, setShowModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [currentId, setCurrentId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         nombre: '',
         estado: 'Planificación',
@@ -32,29 +34,63 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await fetch('/api/proyectos', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    empresaId: currentEmpresa.id
-                })
+            const url = '/api/proyectos';
+            const method = isEditing ? 'PUT' : 'POST';
+            const body = isEditing ? { ...formData, id: currentId } : { ...formData, empresaId: currentEmpresa.id };
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
 
             if (res.ok) {
                 setShowModal(false);
-                setFormData({ nombre: '', estado: 'Planificación', ticket: '', fechaCierre: '', responsable: '' });
+                resetForm();
                 await refreshData();
             } else {
-                alert('Error al crear el proyecto');
+                alert('Error al procesar el proyecto');
             }
         } catch (error) {
             console.error(error);
-            alert('Error de red al crear el proyecto');
+            alert('Error de red');
         }
         setLoading(false);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('¿Estás seguro de eliminar este proyecto?')) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/proyectos?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                await refreshData();
+            } else {
+                alert('Error al eliminar');
+            }
+        } catch (error) {
+            console.error(error);
+        }
+        setLoading(false);
+    };
+
+    const handleEdit = (project: any) => {
+        setIsEditing(true);
+        setCurrentId(project.id);
+        setFormData({
+            nombre: project.nombre,
+            estado: project.estado,
+            ticket: project.ticket,
+            fechaCierre: project.fechaCierre,
+            responsable: project.responsable
+        });
+        setShowModal(true);
+    };
+
+    const resetForm = () => {
+        setIsEditing(false);
+        setCurrentId(null);
+        setFormData({ nombre: '', estado: 'Planificación', ticket: '', fechaCierre: '', responsable: '' });
     };
 
     return (
@@ -67,7 +103,7 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
                     <p className="text-slate-500 text-sm mt-1">Gestión de proyectos para {currentEmpresa.nombre}</p>
                 </div>
                 <button
-                    onClick={() => setShowModal(true)}
+                    onClick={() => { resetForm(); setShowModal(true); }}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
                 >
                     <Plus size={16} /> Nuevo Proyecto
@@ -84,11 +120,12 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
                                 <th className="pb-3 font-medium">Responsable</th>
                                 <th className="pb-3 font-medium">Ticket</th>
                                 <th className="pb-3 font-medium">Fecha Cierre</th>
+                                <th className="pb-3 font-medium text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {activeProjects.map((p: any, i: number) => (
-                                <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                                <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group">
                                     <td className="py-4 text-sm font-medium text-slate-800">{p.nombre}</td>
                                     <td className="py-4">
                                         <Badge type={p.estado === 'En curso' ? 'info' : p.estado === 'Activo' ? 'success' : 'warning'}>
@@ -98,11 +135,21 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
                                     <td className="py-4 text-sm text-slate-600">{p.responsable}</td>
                                     <td className="py-4 text-sm font-medium text-slate-800">{p.ticket}</td>
                                     <td className="py-4 text-sm text-slate-500">{p.fechaCierre}</td>
+                                    <td className="py-4 text-right">
+                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => handleEdit(p)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button onClick={() => handleDelete(p.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                             {activeProjects.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="py-8 text-center text-sm text-slate-500">No hay proyectos activos para esta empresa.</td>
+                                    <td colSpan={6} className="py-8 text-center text-sm text-slate-500">No hay proyectos activos para esta empresa.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -113,7 +160,7 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
             {showModal && (
                 <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Crear Nuevo Proyecto</h3>
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">{isEditing ? 'Editar Proyecto' : 'Crear Nuevo Proyecto'}</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Proyecto</label>
@@ -121,7 +168,7 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
                                     required type="text"
                                     value={formData.nombre}
                                     onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                                     placeholder="Ej: Lanzamiento B2B"
                                 />
                             </div>
@@ -132,7 +179,7 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
                                     <select
                                         value={formData.estado}
                                         onChange={e => setFormData({ ...formData, estado: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                     >
                                         <option value="Planificación">Planificación</option>
                                         <option value="En curso">En curso</option>
@@ -147,7 +194,7 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
                                         required type="text"
                                         value={formData.responsable}
                                         onChange={e => setFormData({ ...formData, responsable: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                         placeholder="Ej: Ana"
                                     />
                                 </div>
@@ -160,17 +207,18 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
                                         required type="text"
                                         value={formData.ticket}
                                         onChange={e => setFormData({ ...formData, ticket: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                         placeholder="Ej: $1,500"
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Fecha de Cierre</label>
                                     <input
-                                        type="date"
+                                        type="text"
                                         value={formData.fechaCierre}
                                         onChange={e => setFormData({ ...formData, fechaCierre: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                                        placeholder="Ej: 2024-12-31"
                                     />
                                 </div>
                             </div>
@@ -179,16 +227,16 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
                                 >
-                                    {loading ? 'Guardando...' : 'Guardar Proyecto'}
+                                    {loading ? 'Procesando...' : isEditing ? 'Actualizar' : 'Guardar'}
                                 </button>
                             </div>
                         </form>

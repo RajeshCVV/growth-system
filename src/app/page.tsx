@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import ProyectosView from '@/components/ProyectosView';
 import PlannerView from '@/components/PlannerView';
 import MetricasView from '@/components/MetricasView';
+import IdentidadView from '@/components/IdentidadView';
 import {
   LayoutDashboard,
   Building2,
@@ -150,74 +151,7 @@ const DashboardView = ({ currentEmpresa, mockData }: any) => (
   </div>
 );
 
-const IdentidadView = ({ currentEmpresa, mockData }: any) => {
-  const identidad = mockData.identidad[currentEmpresa.id];
-
-  if (!identidad) return <div className="p-8 text-slate-500">No hay identidad de marca configurada para esta empresa.</div>;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-end">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Identidad de Marca</h2>
-          <p className="text-slate-500 text-sm mt-1">Biblioteca estratégica de {currentEmpresa.nombre}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <Fingerprint className="text-indigo-600" size={20} />
-            Core de Marca
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">¿Qué es la marca?</p>
-              <p className="text-sm text-slate-700">{identidad.base.queEs}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nicho / Mercado Objetivo</p>
-              <p className="text-sm text-slate-700">{identidad.base.nicho}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Propuesta de Valor</p>
-              <p className="text-sm font-medium text-indigo-700 bg-indigo-50 p-3 rounded-lg border border-indigo-100">{identidad.base.propuesta}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tono de Comunicación</p>
-              <p className="text-sm text-slate-700">{identidad.base.tono}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <UserCircle className="text-emerald-600" size={20} />
-            Buyer Personas Principales
-          </h3>
-          <div className="space-y-4">
-            {identidad.personas.map((persona: any, i: number) => (
-              <div key={i} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-bold text-slate-800">{persona.nombre}</h4>
-                  <Badge type="info">Edad: {persona.edad}</Badge>
-                </div>
-                <div className="space-y-2 mt-3 text-sm">
-                  <p><span className="font-medium text-slate-700">Problema:</span> <span className="text-slate-600">{persona.problema}</span></p>
-                  <p><span className="font-medium text-slate-700">Deseo Principal:</span> <span className="text-slate-600">{persona.deseo}</span></p>
-                  <p><span className="font-medium text-slate-700">Objeciones:</span> <span className="text-slate-600">{persona.objecion}</span></p>
-                </div>
-              </div>
-            ))}
-            <button className="w-full py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 font-medium text-sm hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2">
-              <Plus size={16} /> Agregar nuevo perfil
-            </button>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-};
+// IdentidadView moved to @/components/IdentidadView
 
 const EstrategiaView = ({ mockData }: any) => {
   const campaña = mockData.estrategia[0];
@@ -378,8 +312,8 @@ export default function Page() {
   const renderModule = () => {
     switch (activeModule) {
       case 'dashboard': return <DashboardView currentEmpresa={currentEmpresa} mockData={mockData} />;
-      case 'identidad': return <IdentidadView currentEmpresa={currentEmpresa} mockData={mockData} />;
-      case 'estrategia': return <EstrategiaView currentEmpresa={currentEmpresa} mockData={mockData} />;
+      case 'identidad': return <IdentidadView currentEmpresa={currentEmpresa} mockData={mockData} refreshData={loadData} />;
+      case 'estrategia': return <EstrategiaView currentEmpresa={currentEmpresa} mockData={mockData} refreshData={loadData} />;
       case 'proyectos': return <ProyectosView currentEmpresa={currentEmpresa} mockData={mockData} refreshData={loadData} />;
       case 'planner': return <PlannerView mockData={mockData} refreshData={loadData} />;
       case 'metricas': return <MetricasView mockData={mockData} />;

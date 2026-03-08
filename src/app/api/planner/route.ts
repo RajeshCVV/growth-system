@@ -4,26 +4,42 @@ import { Planner } from '@/models';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
+// EDITAR Tarea del Planner
+export async function PUT(req: Request) {
     try {
         await connectToDatabase();
-        const data = await req.json();
+        const { id, ...data } = await req.json();
 
-        const newTask = await Planner.create({
-            proyecto: data.proyecto,
-            contenido: data.contenido,
-            formato: data.formato || 'Formatos Varios',
-            grabacion: data.grabacion || 'N/A',
-            publicacion: data.publicacion || 'N/A',
-            responsable: data.responsable || 'Sin asignar',
-            estado: data.estado || 'Por grabar'
-        });
+        const updatedTask = await Planner.findByIdAndUpdate(id, data, { new: true });
 
-        return NextResponse.json({
-            success: true,
-            task: { ...newTask.toObject(), id: newTask._id.toString() }
-        }, { status: 201 });
+        if (!updatedTask) {
+            return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
+        }
 
+        return NextResponse.json({ success: true, task: updatedTask });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+// ELIMINAR Tarea del Planner
+export async function DELETE(req: Request) {
+    try {
+        await connectToDatabase();
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
+        }
+
+        const deletedTask = await Planner.findByIdAndDelete(id);
+
+        if (!deletedTask) {
+            return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, message: 'Tarea eliminada' });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
