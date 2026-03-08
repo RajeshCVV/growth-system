@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { Project } from '@/lib/models';
+import { Project } from '@/models';
 
 // 1. CREAR UN NUEVO PROYECTO (POST)
 export async function POST(req: Request) {

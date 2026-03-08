@@ -1,16 +1,18 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// --- Interfaces ---
+// --- Interfaces (Contratos de Datos) ---
+// Define la estructura de una Empresa. Puedes agregar redes sociales aquí.
 export interface ICompany extends Document {
     nombre: string;
     logo: string;
     color: string;
 }
 
+// ADN de Marca y Buyer Personas.
 export interface IBrandIdentity extends Document {
     empresaId: mongoose.Types.ObjectId;
     base: {
-        queEs: string;
+        queEs: string; // ¿Qué es la marca?
         nicho: string;
         propuesta: string;
         tono: string;

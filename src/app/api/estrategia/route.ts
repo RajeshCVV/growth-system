@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { Strategy } from '@/lib/models';
+import { Strategy } from '@/models';
 
 // 1. ACTUALIZAR O CREAR ESTRATEGIA (PUT)
 export async function PUT(req: Request) {

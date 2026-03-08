@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { Planner } from '@/lib/models';
+import { Planner } from '@/models';
 
 // 1. CREAR TAREA DE PLANNER (POST)
 export async function POST(req: Request) {

@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { BrandIdentity } from '@/lib/models';
+import { BrandIdentity } from '@/models';
 
 export async function PUT(req: Request) {
     try {

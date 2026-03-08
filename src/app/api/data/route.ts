@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { Company, Project, Planner, BrandIdentity, Strategy } from '@/lib/models';
+import { Company, Project, Planner, BrandIdentity, Strategy } from '@/models';
 
 export async function GET() {
     try {
