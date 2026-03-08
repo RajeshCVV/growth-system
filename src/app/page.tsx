@@ -131,7 +131,7 @@ export default function Page() {
             </div>
             <div>
               {/* CAMBIAR NOMBRE DEL SISTEMA AQUÍ: */}
-              <h1 className="text-white text-lg font-bold tracking-tight leading-none">GrowthSystem</h1>
+              <h1 className="text-white text-lg font-bold tracking-tight leading-none">Sistema CVV</h1>
               {/* CAMBIAR NOMBRE DE TU AGENCIA/EMPRESA AQUÍ: */}
               <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-[0.2em]">Multivela Studio</span>
             </div>
