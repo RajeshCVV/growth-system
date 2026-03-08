@@ -39,7 +39,7 @@ export async function GET() {
             planner: plannerItems,
             identidad: identityMap,
             estrategia: strategies,
-            // Métricas simuladas (puedes conectarlas a una colección real si lo deseas)
+            // Métrica simuladas (PUEDES CAMBIAR ESTOS VALORES AQUÍ)
             metricasGenerales: {
                 leads: '1,240',
                 cplPromedio: '$2.48',

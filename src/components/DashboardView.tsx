@@ -39,7 +39,9 @@ export default function DashboardView({ currentEmpresa, mockData, onNavigate }: 
             {/* CABECERA DEL DASHBOARD */}
             <div className="flex justify-between items-center sm:items-end">
                 <div>
+                    {/* CAMBIAR TÍTULO PRINCIPAL DEL DASHBOARD: */}
                     <h2 className="text-3xl font-black text-slate-800 tracking-tight">Mando de Control</h2>
+                    {/* CAMBIAR SUBTÍTULO DEL DASHBOARD: */}
                     <p className="text-slate-500 text-sm mt-1">Sincronización estratégica con <span className="font-bold text-indigo-600">{currentEmpresa.nombre}</span></p>
                 </div>
                 {/* Este botón utiliza la función onNavigate definida en Page.tsx para cambiar de módulo */}

@@ -22,13 +22,13 @@ export async function POST() {
             Strategy.deleteMany({})
         ]);
 
-        // 2. INSERTAR EMPRESAS (FORTIS Y CRESCENDO)
+        // 2. INSERTAR EMPRESAS (PUEDES CAMBIAR ESTOS NOMBRES AQUÍ)
         const companies = await Company.create([
             { empresaId: 'fortis', nombre: 'FORTIS BIENES RAÍCES' },
             { empresaId: 'crescendo', nombre: 'CRESCENDO MARCA PERSONAL' }
         ]);
 
-        // 3. INSERTAR PROYECTOS DE PRUEBA
+        // 3. INSERTAR PROYECTOS DE PRUEBA (PUEDES CAMBIAR LOS NOMBRES Y RESPONSABLES)
         await Project.create([
             { id: 'p1', nombre: 'Edificio Los Pinos', estado: 'Activo', responsable: 'Johan', ticket: '$120,000', empresaId: 'fortis' },
             { id: 'p2', nombre: 'Loteo El Sol', estado: 'En curso', responsable: 'Marta', ticket: '$85,000', empresaId: 'fortis' },

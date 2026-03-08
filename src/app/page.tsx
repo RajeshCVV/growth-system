@@ -130,7 +130,9 @@ export default function Page() {
               M
             </div>
             <div>
+              {/* CAMBIAR NOMBRE DEL SISTEMA AQUÍ: */}
               <h1 className="text-white text-lg font-bold tracking-tight leading-none">GrowthSystem</h1>
+              {/* CAMBIAR NOMBRE DE TU AGENCIA/EMPRESA AQUÍ: */}
               <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-[0.2em]">Multivela Studio</span>
             </div>
           </div>
@@ -166,7 +168,9 @@ export default function Page() {
               <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
             </div>
             <div className="text-left flex-1 min-w-0">
+              {/* CAMBIAR NOMBRE DEL USUARIO AQUÍ: */}
               <p className="text-sm font-bold text-white truncate">Johan Planner</p>
+              {/* CAMBIAR ROL/CARGO AQUÍ: */}
               <p className="text-[10px] text-slate-500 uppercase font-black">Super Admin</p>
             </div>
           </button>
