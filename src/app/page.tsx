@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import ProyectosView from '@/components/ProyectosView';
+import PlannerView from '@/components/PlannerView';
+import MetricasView from '@/components/MetricasView';
 import {
   LayoutDashboard,
   Building2,
@@ -377,18 +380,9 @@ export default function Page() {
       case 'dashboard': return <DashboardView currentEmpresa={currentEmpresa} mockData={mockData} />;
       case 'identidad': return <IdentidadView currentEmpresa={currentEmpresa} mockData={mockData} />;
       case 'estrategia': return <EstrategiaView currentEmpresa={currentEmpresa} mockData={mockData} />;
-      case 'proyectos':
-      case 'planner':
-      case 'metricas':
-        return (
-          <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-            <div className="bg-slate-100 p-4 rounded-full mb-4">
-              <FolderKanban size={48} className="text-slate-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Módulo en Desarrollo</h2>
-            <p className="text-slate-500 max-w-md">El módulo de <strong>{modules.find(m => m.id === activeModule)?.name}</strong> ha sido diseñado en la arquitectura pero su interfaz visual está pendiente para la siguiente fase.</p>
-          </div>
-        );
+      case 'proyectos': return <ProyectosView currentEmpresa={currentEmpresa} mockData={mockData} refreshData={loadData} />;
+      case 'planner': return <PlannerView mockData={mockData} refreshData={loadData} />;
+      case 'metricas': return <MetricasView mockData={mockData} />;
       default: return <DashboardView currentEmpresa={currentEmpresa} mockData={mockData} />;
     }
   };
@@ -416,8 +410,8 @@ export default function Page() {
                 key={mod.id}
                 onClick={() => setActiveModule(mod.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                    ? 'bg-indigo-600 text-white'
-                    : 'hover:bg-slate-800 hover:text-white'
+                  ? 'bg-indigo-600 text-white'
+                  : 'hover:bg-slate-800 hover:text-white'
                   }`}
               >
                 <Icon size={18} className={isActive ? 'text-indigo-200' : 'text-slate-400'} />
@@ -451,8 +445,8 @@ export default function Page() {
                   key={emp.id}
                   onClick={() => setCurrentEmpresaId(emp.id)}
                   className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${currentEmpresaId === emp.id
-                      ? 'bg-white text-slate-800 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white text-slate-800 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
                   {emp.nombre}
