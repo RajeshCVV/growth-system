@@ -1,18 +1,17 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 // --- Interfaces (Contratos de Datos) ---
-// Define la estructura de una Empresa. Puedes agregar redes sociales aquí.
 export interface ICompany extends Document {
+    empresaId: string;
     nombre: string;
     logo: string;
     color: string;
 }
 
-// ADN de Marca y Buyer Personas.
 export interface IBrandIdentity extends Document {
-    empresaId: mongoose.Types.ObjectId;
+    empresaId: string;
     base: {
-        queEs: string; // ¿Qué es la marca?
+        queEs: string;
         nicho: string;
         propuesta: string;
         tono: string;
@@ -27,7 +26,7 @@ export interface IBrandIdentity extends Document {
 }
 
 export interface IProject extends Document {
-    empresaId: mongoose.Types.ObjectId;
+    empresaId: string;
     nombre: string;
     estado: string;
     ticket: string;
@@ -36,7 +35,7 @@ export interface IProject extends Document {
 }
 
 export interface IStrategy extends Document {
-    proyectoId: mongoose.Types.ObjectId;
+    empresaId: string; // Relación directa con la empresa por slug
     nombre: string;
     objetivo: string;
     conjuntos: Array<{
@@ -61,39 +60,22 @@ export interface IPlanner extends Document {
     estado: string;
 }
 
-export interface IMetrics extends Document {
-    leads: number;
-    cplPromedio: string;
-    roi: string;
-    inversion: string;
-}
-
 // --- Schemas ---
 const CompanySchema = new Schema({
+    empresaId: { type: String, required: true, unique: true },
     nombre: { type: String, required: true },
-    logo: { type: String, required: true },
-    color: { type: String, required: true }
+    logo: { type: String },
+    color: { type: String }
 }, { timestamps: true });
 
 const BrandIdentitySchema = new Schema({
-    empresaId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
-    base: {
-        queEs: String,
-        nicho: String,
-        propuesta: String,
-        tono: String
-    },
-    personas: [{
-        nombre: String,
-        edad: String,
-        problema: String,
-        deseo: String,
-        objecion: String
-    }]
+    empresaId: { type: String, required: true },
+    base: { queEs: String, nicho: String, propuesta: String, tono: String },
+    personas: [{ nombre: String, edad: String, problema: String, deseo: String, objecion: String }]
 }, { timestamps: true });
 
 const ProjectSchema = new Schema({
-    empresaId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+    empresaId: { type: String, required: true },
     nombre: { type: String, required: true },
     estado: { type: String, required: true },
     ticket: { type: String, required: true },
@@ -102,7 +84,7 @@ const ProjectSchema = new Schema({
 }, { timestamps: true });
 
 const StrategySchema = new Schema({
-    proyectoId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+    empresaId: { type: String, required: true }, // Cambiado para que coincida con el slug 'fortis'
     nombre: { type: String, required: true },
     objetivo: { type: String, required: true },
     conjuntos: [{
@@ -127,17 +109,9 @@ const PlannerSchema = new Schema({
     estado: { type: String, required: true }
 }, { timestamps: true });
 
-const MetricsSchema = new Schema({
-    leads: { type: Number, required: true },
-    cplPromedio: { type: String, required: true },
-    roi: { type: String, required: true },
-    inversion: { type: String, required: true }
-}, { timestamps: true });
-
 // --- Exports ---
-export const Company = mongoose.models.Company || mongoose.model<ICompany>('Company', CompanySchema);
-export const BrandIdentity = mongoose.models.BrandIdentity || mongoose.model<IBrandIdentity>('BrandIdentity', BrandIdentitySchema);
-export const Project = mongoose.models.Project || mongoose.model<IProject>('Project', ProjectSchema);
-export const Strategy = mongoose.models.Strategy || mongoose.model<IStrategy>('Strategy', StrategySchema);
-export const Planner = mongoose.models.Planner || mongoose.model<IPlanner>('Planner', PlannerSchema);
-export const Metrics = mongoose.models.Metrics || mongoose.model<IMetrics>('Metrics', MetricsSchema);
+export const Company = mongoose.models.CompanyV2 || mongoose.model<ICompany>('CompanyV2', CompanySchema);
+export const BrandIdentity = mongoose.models.BrandIdentityV2 || mongoose.model<IBrandIdentity>('BrandIdentityV2', BrandIdentitySchema);
+export const Project = mongoose.models.ProjectV2 || mongoose.model<IProject>('ProjectV2', ProjectSchema);
+export const Strategy = mongoose.models.StrategyV2 || mongoose.model<IStrategy>('StrategyV2', StrategySchema);
+export const Planner = mongoose.models.PlannerV2 || mongoose.model<IPlanner>('PlannerV2', PlannerSchema);
