@@ -74,7 +74,7 @@ export default function Page() {
     setLoading(false);
   };
 
-  if (loading) return <div className="p-8 flex items-center justify-center h-screen"><p className="text-slate-500 font-medium italic animate-pulse">Cargando Sistema Growth...</p></div>;
+  if (loading) return <div className="p-8 flex items-center justify-center h-screen"><p className="text-slate-500 font-medium italic animate-pulse">Cargando Sistema Multivela...</p></div>;
 
   // Pantalla de seguridad por si no hay conexión a MongoDB
   if (!mockData || mockData.empresas.length === 0) {
@@ -169,7 +169,7 @@ export default function Page() {
             </div>
             <div className="text-left flex-1 min-w-0">
               {/* CAMBIAR NOMBRE DEL USUARIO AQUÍ: */}
-              <p className="text-sm font-bold text-white truncate">Johan Planner</p>
+              <p className="text-sm font-bold text-white truncate">Caren Vargas</p>
               {/* CAMBIAR ROL/CARGO AQUÍ: */}
               <p className="text-[10px] text-slate-500 uppercase font-black">Super Admin</p>
             </div>
