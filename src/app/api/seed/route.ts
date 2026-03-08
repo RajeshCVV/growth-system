@@ -18,8 +18,8 @@ export async function POST() {
 
         console.log("Insertando Empresas...");
         await Company.create([
-            { empresaId: 'fortis', nombre: 'FORTIS BIENES RAÍCES', logo: 'F', color: '#4f46e5' },
-            { empresaId: 'crescendo', nombre: 'CRESCENDO MARCA PERSONAL', logo: 'C', color: '#10b981' }
+            { empresaId: 'fortis', nombre: 'Fortress', logo: 'F', color: '#4f46e5' },
+            { empresaId: 'crescendo', nombre: 'Crescendo', logo: 'C', color: '#10b981' }
         ]);
 
         console.log("Insertando Proyectos...");
