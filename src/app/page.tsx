@@ -24,7 +24,8 @@ import {
   Bell,
   UserCircle,
   Menu,
-  X
+  X,
+  Building2
 } from 'lucide-react';
 
 export default function Page() {
@@ -140,6 +141,32 @@ export default function Page() {
           <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-white">
             <X size={24} />
           </button>
+        </div>
+
+        {/* --- SELECTOR DE EMPRESA MÓVIL --- */}
+        <div className="px-6 py-4 border-b border-white/5 lg:hidden bg-slate-950/30">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <Building2 size={12} /> Empresa en Gestión
+          </p>
+          <div className="flex flex-col gap-2">
+            {mockData.empresas.map((emp: any) => (
+              <button
+                key={emp.id}
+                onClick={() => {
+                  setCurrentEmpresaId(emp.id);
+                  // Opcional: Cerrar sidebar al cambiar? 
+                  // No lo cerramos para que vea el cambio de contexto si quiere
+                }}
+                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all ${currentEmpresaId === emp.id
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'bg-slate-800/50 text-slate-400 hover:text-white'
+                  }`}
+              >
+                {emp.nombre}
+                {currentEmpresaId === emp.id && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+              </button>
+            ))}
+          </div>
         </div>
 
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto pt-4">
