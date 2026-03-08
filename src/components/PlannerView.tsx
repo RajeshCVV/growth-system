@@ -1,5 +1,17 @@
+/**
+ * COMPONENTE: PlannerView
+ * Calendario y cronograma de publicaciones en redes sociales.
+ * Permite gestionar contenidos mensuales para cada empresa.
+ */
+
 import React, { useState } from 'react';
-import { Plus, CalendarDays, Clock, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, CalendarDays, Clock, PlayCircle, CheckCircle2, MoreVertical } from 'lucide-react';
+
+const Card = ({ children, className = '' }: any) => (
+    <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-lg ${className}`}>
+        {children}
+    </div>
+);
 
 const Badge = ({ children, type = 'default' }: any) => {
     const colors: Record<string, string> = {
@@ -9,7 +21,7 @@ const Badge = ({ children, type = 'default' }: any) => {
         default: 'bg-slate-100 text-slate-800'
     };
     return (
-        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${colors[type] || colors.default}`}>
+        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${colors[type] || colors.default}`}>
             {children}
         </span>
     );
@@ -18,27 +30,25 @@ const Badge = ({ children, type = 'default' }: any) => {
 export default function PlannerView({ mockData, refreshData }: any) {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentId, setCurrentId] = useState<string | null>(null);
-    const [formData, setFormData] = useState({
-        proyecto: mockData.proyectos[0]?.nombre || '',
-        contenido: '',
-        formato: 'Reel',
-        grabacion: '',
-        publicacion: '',
-        responsable: '',
-        estado: 'Por grabar'
-    });
+    const [currentTareaId, setCurrentTareaId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const plannerTasks = mockData.planner || [];
+    // Formulario para contenidos
+    const [formData, setFormData] = useState({
+        contenido: '',
+        publicacion: '',
+        formato: 'Reel',
+        estado: 'Programado'
+    });
 
+    // SUBMIT: Crear o Editar en MongoDB
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
             const url = '/api/planner';
             const method = isEditing ? 'PUT' : 'POST';
-            const body = isEditing ? { ...formData, id: currentId } : formData;
+            const body = isEditing ? { ...formData, id: currentTareaId } : formData;
 
             const res = await fetch(url, {
                 method,
@@ -48,246 +58,192 @@ export default function PlannerView({ mockData, refreshData }: any) {
 
             if (res.ok) {
                 setShowModal(false);
-                resetForm();
                 await refreshData();
-            } else {
-                alert('Error al procesar la tarea');
             }
-        } catch (error) {
-            console.error(error);
-            alert('Error de red');
+        } catch (e) {
+            console.error("Error en submit planner:", e);
         }
         setLoading(false);
     };
 
+    // DELETE: Eliminar de MongoDB
     const handleDelete = async (id: string) => {
-        if (!confirm('¿Estás seguro de eliminar esta tarea?')) return;
+        if (!confirm('¿Eliminar esta tarea del calendario?')) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/planner?id=${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                await refreshData();
-            } else {
-                alert('Error al eliminar');
-            }
-        } catch (error) {
-            console.error(error);
+            await fetch(`/api/planner?id=${id}`, { method: 'DELETE' });
+            await refreshData();
+        } catch (e) {
+            console.error("Error eliminando tarea:", e);
         }
         setLoading(false);
     };
 
-    const handleEdit = (task: any) => {
+    const handleEdit = (t: any) => {
         setIsEditing(true);
-        setCurrentId(task.id);
+        setCurrentTareaId(t.id);
         setFormData({
-            proyecto: task.proyecto,
-            contenido: task.contenido,
-            formato: task.formato,
-            grabacion: task.grabacion,
-            publicacion: task.publicacion,
-            responsable: task.responsable,
-            estado: task.estado
+            contenido: t.contenido,
+            publicacion: t.publicacion,
+            formato: t.formato,
+            estado: t.estado
         });
         setShowModal(true);
     };
 
-    const resetForm = () => {
-        setIsEditing(false);
-        setCurrentId(null);
-        setFormData({
-            proyecto: mockData.proyectos[0]?.nombre || '',
-            contenido: '',
-            formato: 'Reel',
-            grabacion: '',
-            publicacion: '',
-            responsable: '',
-            estado: 'Por grabar'
-        });
-    };
-
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-end">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+            {/* CABECERA */}
+            <div className="flex justify-between items-center sm:items-end">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <CalendarDays className="text-indigo-600" /> Planner de Contenidos
+                    <h2 className="text-3xl font-black text-slate-800 flex items-center gap-3 tracking-tight">
+                        <CalendarDays className="text-indigo-600" size={32} /> Planner de Contenidos
                     </h2>
-                    <p className="text-slate-500 text-sm mt-1">Gestión de piezas audiovisuales y publicaciones</p>
+                    <p className="text-slate-500 text-sm mt-1 uppercase font-bold tracking-widest italic tracking-tighter">Cronograma de Impacto Social</p>
                 </div>
                 <button
-                    onClick={() => { resetForm(); setShowModal(true); }}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                    onClick={() => { setIsEditing(false); setFormData({ contenido: '', publicacion: '', formato: 'Reel', estado: 'Programado' }); setShowModal(true); }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl text-xs font-black flex items-center gap-2 transition-all shadow-lg active:scale-95"
                 >
-                    <Plus size={16} /> Agregar Tarea
+                    <Plus size={16} strokeWidth={3} /> AGENDAR PUBLICACIÓN
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            {/* LISTADO TIPO TABLA PREMIUM */}
+            <Card className="p-0 overflow-hidden border-none ring-1 ring-slate-100 shadow-xl shadow-slate-200/50">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-slate-200 text-slate-500 text-sm">
-                                <th className="pb-3 font-medium">Contenido / Título</th>
-                                <th className="pb-3 font-medium">Proyecto Asignado</th>
-                                <th className="pb-3 font-medium">Formato</th>
-                                <th className="pb-3 font-medium">Fechas (Grab/Pub)</th>
-                                <th className="pb-3 font-medium">Responsable</th>
-                                <th className="pb-3 font-medium">Estado</th>
-                                <th className="pb-3 font-medium text-right">Acciones</th>
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-900">
+                            <tr className="text-slate-300 text-[10px] uppercase font-black tracking-[0.2em]">
+                                <th className="px-8 py-5">Contenido / Título</th>
+                                <th className="px-6 py-5">Fecha / Hora</th>
+                                <th className="px-6 py-5">Formato</th>
+                                <th className="px-6 py-5">Estado</th>
+                                <th className="px-8 py-5 text-right">Acción</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {plannerTasks.map((t: any, i: number) => (
-                                <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group">
-                                    <td className="py-4 text-sm font-medium text-slate-800">{t.contenido}</td>
-                                    <td className="py-4 text-sm text-slate-600">{t.proyecto}</td>
-                                    <td className="py-4 text-sm text-slate-600">{t.formato}</td>
-                                    <td className="py-4 text-sm text-slate-500 flex flex-col gap-1">
-                                        <span className="flex items-center gap-1"><Clock size={12} /> G: {t.grabacion}</span>
-                                        <span className="flex items-center gap-1 text-indigo-600"><Clock size={12} /> P: {t.publicacion}</span>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                            {mockData.planner.map((tarea: any) => (
+                                <tr key={tarea.id} className="group hover:bg-indigo-50/30 transition-all duration-300">
+                                    <td className="px-8 py-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0">
+                                                <PlayCircle size={18} />
+                                            </div>
+                                            <p className="text-sm font-bold text-slate-800 uppercase tracking-tight truncate max-w-xs">{tarea.contenido}</p>
+                                        </div>
                                     </td>
-                                    <td className="py-4 text-sm text-slate-600">{t.responsable}</td>
-                                    <td className="py-4">
-                                        <Badge type={t.estado === 'Publicado' || t.estado === 'Programado' ? 'success' : t.estado === 'En edición' ? 'warning' : 'info'}>
-                                            {t.estado}
-                                        </Badge>
+                                    <td className="px-6 py-5">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                                            <Clock size={14} className="text-indigo-400" />
+                                            {tarea.publicacion}
+                                        </div>
                                     </td>
-                                    <td className="py-4 text-right">
+                                    <td className="px-6 py-5">
+                                        <Badge type="info">{tarea.formato}</Badge>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 size={14} className={tarea.estado === 'Publicado' ? 'text-emerald-500' : 'text-slate-300'} />
+                                            <span className={`text-[11px] font-black uppercase ${tarea.estado === 'Publicado' ? 'text-emerald-600' : 'text-slate-500'}`}>
+                                                {tarea.estado}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-5 text-right">
                                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => handleEdit(t)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
-                                                <Edit2 size={16} />
+                                            <button onClick={() => handleEdit(tarea)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 shadow-sm border border-transparent hover:border-slate-100">
+                                                <Edit2 size={14} />
                                             </button>
-                                            <button onClick={() => handleDelete(t.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
-                                                <Trash2 size={16} />
+                                            <button onClick={() => handleDelete(tarea.id)} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-red-500 shadow-sm border border-transparent hover:border-slate-100">
+                                                <Trash2 size={14} />
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                             ))}
-                            {plannerTasks.length === 0 && (
+                            {mockData.planner.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} className="py-8 text-center text-sm text-slate-500">No hay tareas creadas en el planner.</td>
+                                    <td colSpan={5} className="py-20 text-center text-slate-400 font-mono text-xs">Aún no hay contenidos agendados.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </Card>
 
+            {/* MODAL PARA CONTENIDOS */}
             {showModal && (
-                <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">{isEditing ? 'Editar Tarea' : 'Nueva Tarea de Contenido'}</h3>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-in fade-in duration-300">
+                    <Card className="p-8 w-full max-w-md shadow-2xl border-none ring-1 ring-white/20">
+                        <h3 className="text-2xl font-black text-slate-800 mb-6 uppercase tracking-tight">
+                            {isEditing ? 'Ajustar Publicación' : 'Nueva Salida'}
+                        </h3>
 
+                        <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Título del Contenido</label>
-                                <input
-                                    required type="text"
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tema / Guion del Contenido</label>
+                                <textarea
+                                    required
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-sm focus:bg-white focus:ring-4 focus:ring-indigo-100 outline-none transition-all placeholder:italic"
                                     value={formData.contenido}
                                     onChange={e => setFormData({ ...formData, contenido: e.target.value })}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                                    placeholder="Ej: Video explicativo del servicio"
+                                    placeholder="Ej: 5 errores al comprar tu primera casa en Villavicencio..."
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Proyecto Asignado</label>
-                                    <select
-                                        value={formData.proyecto}
-                                        onChange={e => setFormData({ ...formData, proyecto: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                    >
-                                        {mockData.proyectos.map((p: any) => (
-                                            <option key={p.id} value={p.nombre}>{p.nombre}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Formato</label>
-                                    <select
-                                        value={formData.formato}
-                                        onChange={e => setFormData({ ...formData, formato: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                    >
-                                        <option value="Reel">Reel / TikTok</option>
-                                        <option value="Carrusel">Carrusel</option>
-                                        <option value="Post Estático">Post Estático</option>
-                                        <option value="Historia">Historia</option>
-                                        <option value="Video Youtube">Video YouTube</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Grabación</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Fecha y Hora</label>
                                     <input
+                                        required
                                         type="text"
-                                        value={formData.grabacion}
-                                        onChange={e => setFormData({ ...formData, grabacion: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="Ej: 2024-11-20"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Publicación</label>
-                                    <input
-                                        type="text"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
                                         value={formData.publicacion}
                                         onChange={e => setFormData({ ...formData, publicacion: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="Ej: 2024-11-25"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Responsable</label>
-                                    <input
-                                        type="text"
-                                        value={formData.responsable}
-                                        onChange={e => setFormData({ ...formData, responsable: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="Ej: Editor 1"
+                                        placeholder="Ej: Lunes 10:00 AM"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Formato</label>
                                     <select
-                                        value={formData.estado}
-                                        onChange={e => setFormData({ ...formData, estado: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none"
+                                        value={formData.formato}
+                                        onChange={e => setFormData({ ...formData, formato: e.target.value })}
                                     >
-                                        <option value="Por Grabar">Por Grabar</option>
-                                        <option value="En Edición">En Edición</option>
-                                        <option value="En Aprobación">En Aprobación</option>
-                                        <option value="Programado">Programado</option>
-                                        <option value="Publicado">Publicado</option>
+                                        <option value="Reel">Reel 🎬</option>
+                                        <option value="Post">Post 🖼️</option>
+                                        <option value="Story">Story 🤳</option>
+                                        <option value="Video Largo">Video 🎥</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                                >
-                                    {loading ? 'Procesando...' : isEditing ? 'Actualizar' : 'Guardar'}
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Estado</label>
+                                <div className="flex gap-2">
+                                    {['Programado', 'Publicado'].map(s => (
+                                        <button
+                                            key={s}
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, estado: s })}
+                                            className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl transition-all ${formData.estado === s ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                                        >
+                                            {s}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 mt-8">
+                                <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 text-xs font-black text-slate-500 hover:text-slate-800">CANCELAR</button>
+                                <button type="submit" disabled={loading} className="bg-slate-900 text-white px-8 py-3 rounded-2xl text-xs font-black shadow-lg hover:bg-indigo-600 transition-all active:scale-95 disabled:opacity-50">
+                                    {loading ? 'SINCRONIZANDO...' : 'CONFIRMAR AGENDAMIENTO'}
                                 </button>
                             </div>
                         </form>
-                    </div>
+                    </Card>
                 </div>
             )}
         </div>

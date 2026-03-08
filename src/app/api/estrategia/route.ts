@@ -1,51 +1,52 @@
+/**
+ * API: /api/estrategia
+ * Acción: Maneja la estructura de campañas, conjuntos y anuncios de Meta Ads.
+ */
+
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { Strategy } from '@/models';
+import connectDB from '@/lib/mongodb';
+import { Strategy } from '@/lib/models';
 
-export const dynamic = 'force-dynamic';
-
+// 1. ACTUALIZAR O CREAR ESTRATEGIA (PUT)
 export async function PUT(req: Request) {
     try {
-        await connectToDatabase();
-        const { id, ...data } = await req.json();
+        const { empresaId, ...data } = await req.json();
+        await connectDB();
 
-        if (!id) {
-            return NextResponse.json({ error: 'ID de estrategia requerido' }, { status: 400 });
-        }
+        // Sincroniza los cambios en la estructura jerárquica de la campaña
+        const updated = await Strategy.findOneAndUpdate(
+            { empresaId },
+            data,
+            { new: true, upsert: true }
+        );
 
-        const updatedStrategy = await Strategy.findByIdAndUpdate(id, data, { new: true });
-
-        return NextResponse.json({ success: true, strategy: updatedStrategy });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(updated);
+    } catch (error) {
+        return NextResponse.json({ error: 'Error al actualizar estrategia' }, { status: 500 });
     }
 }
 
+// 2. CREAR DESDE CERO (POST)
 export async function POST(req: Request) {
     try {
-        await connectToDatabase();
         const data = await req.json();
-
+        await connectDB();
         const newStrategy = await Strategy.create(data);
-
-        return NextResponse.json({ success: true, strategy: newStrategy }, { status: 201 });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(newStrategy);
+    } catch (error) {
+        return NextResponse.json({ error: 'Error al crear estrategia' }, { status: 500 });
     }
 }
 
+// 3. ELIMINAR ESTRATEGIA (DELETE)
 export async function DELETE(req: Request) {
     try {
-        await connectToDatabase();
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
-
-        if (!id) return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
-
+        await connectDB();
         await Strategy.findByIdAndDelete(id);
-
-        return NextResponse.json({ success: true, message: 'Estrategia eliminada' });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json({ error: 'Error al eliminar estrategia' }, { status: 500 });
     }
 }

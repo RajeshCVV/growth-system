@@ -1,5 +1,17 @@
+/**
+ * COMPONENTE: ProyectosView
+ * Permite el registro y control de proyectos inmobiliarios.
+ * Conectado directamente a MongoDB para CRUD completo.
+ */
+
 import React, { useState } from 'react';
-import { Plus, FolderKanban, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, LayoutGrid, User, Ticket, CheckCircle2 } from 'lucide-react';
+
+const Card = ({ children, className = '' }: any) => (
+    <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-lg ${className}`}>
+        {children}
+    </div>
+);
 
 const Badge = ({ children, type = 'default' }: any) => {
     const colors: Record<string, string> = {
@@ -9,7 +21,7 @@ const Badge = ({ children, type = 'default' }: any) => {
         default: 'bg-slate-100 text-slate-800'
     };
     return (
-        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${colors[type] || colors.default}`}>
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${colors[type] || colors.default}`}>
             {children}
         </span>
     );
@@ -18,25 +30,28 @@ const Badge = ({ children, type = 'default' }: any) => {
 export default function ProyectosView({ currentEmpresa, mockData, refreshData }: any) {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentId, setCurrentId] = useState<string | null>(null);
-    const [formData, setFormData] = useState({
-        nombre: '',
-        estado: 'Planificación',
-        ticket: '',
-        fechaCierre: '',
-        responsable: ''
-    });
+    const [currentProyectoId, setCurrentProyectoId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const activeProjects = mockData.proyectos.filter((p: any) => p.empresaId === currentEmpresa.id);
+    // Estado del formulario
+    const [formData, setFormData] = useState({
+        nombre: '',
+        estado: 'Activo',
+        responsable: '',
+        ticket: '',
+        empresaId: currentEmpresa.id
+    });
 
+    const proyectos = mockData.proyectos.filter((p: any) => p.empresaId === currentEmpresa.id);
+
+    // FUNCIÓN PARA CREAR O EDITAR
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
             const url = '/api/proyectos';
             const method = isEditing ? 'PUT' : 'POST';
-            const body = isEditing ? { ...formData, id: currentId } : { ...formData, empresaId: currentEmpresa.id };
+            const body = isEditing ? { ...formData, id: currentProyectoId } : formData;
 
             const res = await fetch(url, {
                 method,
@@ -46,203 +61,191 @@ export default function ProyectosView({ currentEmpresa, mockData, refreshData }:
 
             if (res.ok) {
                 setShowModal(false);
-                resetForm();
-                await refreshData();
-            } else {
-                alert('Error al procesar el proyecto');
+                await refreshData(); // Recarga la lista desde MongoDB
             }
-        } catch (error) {
-            console.error(error);
-            alert('Error de red');
+        } catch (e) {
+            console.error("Error en submit proyectos:", e);
         }
         setLoading(false);
     };
 
+    // FUNCIÓN PARA ELIMINAR
     const handleDelete = async (id: string) => {
-        if (!confirm('¿Estás seguro de eliminar este proyecto?')) return;
+        if (!confirm('¿Seguro que deseas eliminar este proyecto? Los datos no se podrán recuperar.')) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/proyectos?id=${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                await refreshData();
-            } else {
-                alert('Error al eliminar');
-            }
-        } catch (error) {
-            console.error(error);
+            await fetch(`/api/proyectos?id=${id}`, { method: 'DELETE' });
+            await refreshData();
+        } catch (e) {
+            console.error("Error eliminando proyecto:", e);
         }
         setLoading(false);
     };
 
-    const handleEdit = (project: any) => {
+    // Abrir modal en modo edición
+    const handleEdit = (p: any) => {
         setIsEditing(true);
-        setCurrentId(project.id);
+        setCurrentProyectoId(p.id);
         setFormData({
-            nombre: project.nombre,
-            estado: project.estado,
-            ticket: project.ticket,
-            fechaCierre: project.fechaCierre,
-            responsable: project.responsable
+            nombre: p.nombre,
+            estado: p.estado,
+            responsable: p.responsable,
+            ticket: p.ticket,
+            empresaId: p.empresaId
         });
         setShowModal(true);
     };
 
-    const resetForm = () => {
-        setIsEditing(false);
-        setCurrentId(null);
-        setFormData({ nombre: '', estado: 'Planificación', ticket: '', fechaCierre: '', responsable: '' });
-    };
-
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-end">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+            {/* CABECERA */}
+            <div className="flex justify-between items-center sm:items-end">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <FolderKanban className="text-indigo-600" /> Proyectos
+                    <h2 className="text-3xl font-black text-slate-800 flex items-center gap-3 tracking-tight">
+                        <FolderKanban className="text-indigo-600" size={32} /> Gestión de Proyectos
                     </h2>
-                    <p className="text-slate-500 text-sm mt-1">Gestión de proyectos para {currentEmpresa.nombre}</p>
+                    <p className="text-slate-500 text-sm mt-1 uppercase font-bold tracking-widest italic">{currentEmpresa.nombre}</p>
                 </div>
                 <button
-                    onClick={() => { resetForm(); setShowModal(true); }}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                    onClick={() => { setIsEditing(false); setFormData({ ...formData, nombre: '', responsable: '', ticket: '' }); setShowModal(true); }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl text-xs font-black flex items-center gap-2 transition-all shadow-lg active:scale-95"
                 >
-                    <Plus size={16} /> Nuevo Proyecto
+                    <Plus size={16} strokeWidth={3} /> REGISTRAR NUEVO
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-slate-200 text-slate-500 text-sm">
-                                <th className="pb-3 font-medium">Nombre del Proyecto</th>
-                                <th className="pb-3 font-medium">Estado</th>
-                                <th className="pb-3 font-medium">Responsable</th>
-                                <th className="pb-3 font-medium">Ticket</th>
-                                <th className="pb-3 font-medium">Fecha Cierre</th>
-                                <th className="pb-3 font-medium text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {activeProjects.map((p: any, i: number) => (
-                                <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group">
-                                    <td className="py-4 text-sm font-medium text-slate-800">{p.nombre}</td>
-                                    <td className="py-4">
-                                        <Badge type={p.estado === 'En curso' ? 'info' : p.estado === 'Activo' ? 'success' : 'warning'}>
-                                            {p.estado}
-                                        </Badge>
-                                    </td>
-                                    <td className="py-4 text-sm text-slate-600">{p.responsable}</td>
-                                    <td className="py-4 text-sm font-medium text-slate-800">{p.ticket}</td>
-                                    <td className="py-4 text-sm text-slate-500">{p.fechaCierre}</td>
-                                    <td className="py-4 text-right">
-                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => handleEdit(p)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button onClick={() => handleDelete(p.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {activeProjects.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="py-8 text-center text-sm text-slate-500">No hay proyectos activos para esta empresa.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+            {/* LISTADO DE PROYECTOS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {proyectos.map((p: any) => (
+                    <Card key={p.id} className="p-6 relative group border-none ring-1 ring-slate-100">
+                        <div className="absolute top-4 right-4 flex gap-1 transform translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
+                            <button
+                                onClick={() => handleEdit(p)}
+                                className="p-2 bg-white text-slate-400 hover:text-indigo-600 rounded-lg shadow-sm border border-slate-50 transition-colors"
+                                title="Editar Proyecto"
+                            >
+                                <Edit2 size={14} />
+                            </button>
+                            <button
+                                onClick={() => handleDelete(p.id)}
+                                className="p-2 bg-white text-slate-400 hover:text-red-500 rounded-lg shadow-sm border border-slate-50 transition-colors"
+                                title="Eliminar Proyecto"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 bg-slate-50 rounded-2xl text-indigo-500">
+                                <LayoutGrid size={20} />
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="font-black text-slate-800 truncate uppercase tracking-tight">{p.nombre}</h3>
+                                <Badge type={p.estado === 'Activo' ? 'success' : 'warning'}>{p.estado}</Badge>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 mt-6 pt-6 border-t border-slate-50">
+                            <div className="flex items-center gap-3 text-xs">
+                                <User size={14} className="text-slate-400" />
+                                <span className="text-slate-500 font-bold uppercase tracking-widest">Líder:</span>
+                                <span className="text-slate-800 font-medium">{p.responsable}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs">
+                                <Ticket size={14} className="text-slate-400" />
+                                <span className="text-slate-500 font-bold uppercase tracking-widest">Valor:</span>
+                                <span className="text-indigo-600 font-black">{p.ticket}</span>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+
+                {proyectos.length === 0 && (
+                    <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-100">
+                        <p className="text-slate-400 font-medium font-mono">No se encontraron proyectos para esta cuenta.</p>
+                    </div>
+                )}
             </div>
 
+            {/* --- MODAL DE REGISTRO / EDICIÓN --- */}
             {showModal && (
-                <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">{isEditing ? 'Editar Proyecto' : 'Crear Nuevo Proyecto'}</h3>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-in fade-in duration-300">
+                    <Card className="p-8 w-full max-w-md shadow-2xl border-none ring-1 ring-white/20">
+                        <h3 className="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">
+                            {isEditing ? 'Actualizar Registro' : 'Nuevo Proyecto'}
+                        </h3>
+                        <p className="text-slate-500 text-xs mb-8 uppercase font-bold tracking-widest italic">{currentEmpresa.nombre}</p>
+
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Proyecto</label>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Nombre Comercial</label>
                                 <input
-                                    required type="text"
+                                    required
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-300 outline-none transition-all"
                                     value={formData.nombre}
                                     onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    placeholder="Ej: Lanzamiento B2B"
+                                    placeholder="Eje: Edificio Aurora"
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Estado Operativo</label>
                                     <select
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none"
                                         value={formData.estado}
                                         onChange={e => setFormData({ ...formData, estado: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
                                     >
-                                        <option value="Planificación">Planificación</option>
-                                        <option value="En curso">En curso</option>
-                                        <option value="Activo">Activo</option>
-                                        <option value="Pausado">Pausado</option>
-                                        <option value="Completado">Completado</option>
+                                        <option value="Activo">Activo ✅</option>
+                                        <option value="Pausado">Pausado ⏳</option>
+                                        <option value="Cerrado">Cerrado 🏁</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Responsable</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Líder de Proyecto</label>
                                     <input
-                                        required type="text"
+                                        required
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-4 focus:ring-indigo-100"
                                         value={formData.responsable}
                                         onChange={e => setFormData({ ...formData, responsable: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="Ej: Ana"
+                                        placeholder="Ej: Laura"
                                     />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Ticket Promedio</label>
-                                    <input
-                                        required type="text"
-                                        value={formData.ticket}
-                                        onChange={e => setFormData({ ...formData, ticket: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="Ej: $1,500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Fecha de Cierre</label>
-                                    <input
-                                        type="text"
-                                        value={formData.fechaCierre}
-                                        onChange={e => setFormData({ ...formData, fechaCierre: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="Ej: 2024-12-31"
-                                    />
-                                </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Ticket Promedio (USD)</label>
+                                <input
+                                    required
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-4 focus:ring-indigo-100"
+                                    value={formData.ticket}
+                                    onChange={e => setFormData({ ...formData, ticket: e.target.value })}
+                                    placeholder="Ej: $150,000"
+                                />
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+                            <div className="flex justify-end gap-3 mt-8">
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                                    className="px-6 py-3 text-xs font-black text-slate-500 hover:bg-slate-100 rounded-2xl transition-all"
                                 >
-                                    Cancelar
+                                    CANCELAR
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-2xl text-xs font-black shadow-lg shadow-indigo-600/20 active:scale-95 transition-all disabled:opacity-50"
                                 >
-                                    {loading ? 'Procesando...' : isEditing ? 'Actualizar' : 'Guardar'}
+                                    {loading ? 'SINCRONIZANDO...' : isEditing ? 'GUARDAR CAMBIOS' : 'REGISTRAR'}
                                 </button>
                             </div>
                         </form>
-                    </div>
+                    </Card>
                 </div>
             )}
         </div>
     );
 }
+import { FolderKanban } from 'lucide-react';

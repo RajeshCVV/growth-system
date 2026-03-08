@@ -1,100 +1,81 @@
+/**
+ * API: /api/seed
+ * Acción: Inicialización de la base de datos (Semilla).
+ * IMPORTANTE: Solo se debe usar al inicio o para restaurar datos de prueba.
+ * Cuidado: El método actual borra las colecciones previas antes de insertar.
+ */
+
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { Company, BrandIdentity, Project, Strategy, Planner, Metrics } from '@/models';
-
-// Datos iniciales de prueba (Mock Data convertido a Seed)
-const seedData = {
-    empresas: [
-        { nombre: 'Fortis', logo: 'F', color: 'bg-blue-600' },
-        { nombre: 'Crescendo', logo: 'C', color: 'bg-indigo-600' }
-    ],
-    metricasGenerales: {
-        leads: 1450,
-        cplPromedio: '$2.15',
-        roi: '350%',
-        inversion: '$3,100'
-    }
-};
-
-export const dynamic = 'force-dynamic';
+import connectDB from '@/lib/mongodb';
+import { Company, Project, Planner, BrandIdentity, Strategy } from '@/lib/models';
 
 export async function POST() {
     try {
-        await connectToDatabase();
+        await connectDB();
 
-        // Limpiar BD
-        await Company.deleteMany({});
-        await BrandIdentity.deleteMany({});
-        await Project.deleteMany({});
-        await Strategy.deleteMany({});
-        await Planner.deleteMany({});
-        await Metrics.deleteMany({});
+        // 1. LIMPIEZA: Eliminamos todos los registros previos para evitar duplicidad en el modo prueba
+        await Promise.all([
+            Company.deleteMany({}),
+            Project.deleteMany({}),
+            Planner.deleteMany({}),
+            BrandIdentity.deleteMany({}),
+            Strategy.deleteMany({})
+        ]);
 
-        // Crear Empresas
-        const [fortis, crescendo] = await Company.insertMany(seedData.empresas);
+        // 2. INSERTAR EMPRESAS (FORTIS Y CRESCENDO)
+        const companies = await Company.create([
+            { empresaId: 'fortis', nombre: 'FORTIS BIENES RAÍCES' },
+            { empresaId: 'crescendo', nombre: 'CRESCENDO MARCA PERSONAL' }
+        ]);
 
-        // Identidad
+        // 3. INSERTAR PROYECTOS DE PRUEBA
+        await Project.create([
+            { id: 'p1', nombre: 'Edificio Los Pinos', estado: 'Activo', responsable: 'Johan', ticket: '$120,000', empresaId: 'fortis' },
+            { id: 'p2', nombre: 'Loteo El Sol', estado: 'En curso', responsable: 'Marta', ticket: '$85,000', empresaId: 'fortis' },
+            { id: 'p3', nombre: 'Lanzamiento Marca', estado: 'Planificación', responsable: 'Johan', ticket: 'N/A', empresaId: 'crescendo' }
+        ]);
+
+        // 4. INSERTAR PLANNER (CALENDARIO)
+        await Planner.create([
+            { id: 't1', contenido: 'Reel: Cómo invertir en Villavicencio', publicacion: 'Lunes 10:00 AM', formato: 'Reel', estado: 'Programado' },
+            { id: 't2', contenido: 'Post: Tips para primera compra', publicacion: 'Miércoles 5:00 PM', formato: 'Post', estado: 'Programado' }
+        ]);
+
+        // 5. INSERTAR IDENTIDADES ESTRATÉGICAS
         await BrandIdentity.create([
             {
-                empresaId: fortis._id,
+                empresaId: 'fortis',
                 base: {
-                    queEs: 'Agencia de consultoría y aceleración de negocios.',
-                    nicho: 'Emprendedores y dueños de negocios B2B.',
-                    propuesta: 'Sistematizamos tu crecimiento para que no dependas de la suerte.',
-                    tono: 'Directo, profesional, autoritario pero accesible.'
+                    queEs: 'Agencia inmobiliaria premium focusing en ROI.',
+                    nicho: 'Inversionistas de bienes raíces.',
+                    propuesta: 'Vender más rápido con tecnología avanzada.',
+                    tono: 'Profesional y Disruptivo'
                 },
                 personas: [
-                    { nombre: 'El Dueño Estancado', edad: '35-45', problema: 'Vende pero no tiene ganancias reales. Trabaja 14 horas al día.', deseo: 'Libertad financiera y operativa.', objecion: 'No tengo tiempo para implementar sistemas.' }
-                ]
-            },
-            {
-                empresaId: crescendo._id,
-                base: {
-                    queEs: 'Academia de desarrollo personal y habilidades de alto valor.',
-                    nicho: 'Jóvenes profesionales y emprendedores primerizos.',
-                    propuesta: 'Desarrolla la mentalidad y habilidades para escalar tus ingresos.',
-                    tono: 'Inspirador, enérgico, disruptivo.'
-                },
-                personas: [
-                    { nombre: 'El Joven Ambicioso', edad: '20-28', problema: 'No sabe por dónde empezar, exceso de información.', deseo: 'Crear su primera fuente de ingresos estable.', objecion: 'Falta de capital inicial.' }
+                    { nombre: 'Inversionista Novato', edad: '25-35', problema: 'Miedo a perder capital', deseo: 'Libertad financiera', objecion: 'Falta de confianza' }
                 ]
             }
         ]);
 
-        // Proyectos
-        const proyectos = await Project.insertMany([
-            { empresaId: fortis._id, nombre: 'Lanzamiento Programa X', estado: 'En curso', ticket: '$997', fechaCierre: '2024-11-30', responsable: 'Johan' },
-            { empresaId: fortis._id, nombre: 'Consultoría B2B High Ticket', estado: 'Activo', ticket: '$5,000', fechaCierre: 'Continuo', responsable: 'Ana' },
-            { empresaId: crescendo._id, nombre: 'Reto 7 Días Crescendo', estado: 'Planificación', ticket: '$47', fechaCierre: '2024-12-15', responsable: 'Carlos' }
-        ]);
-
-        // Estrategia
+        // 6. INSERTAR ESTRATEGIA DE META ADS
         await Strategy.create({
-            proyectoId: proyectos[0]._id,
-            nombre: 'Lanzamiento X - Atracción',
-            objetivo: 'Conversión',
+            empresaId: 'fortis',
+            nombre: 'Campaña Captación de Leads Q1',
+            objetivo: 'Generación de Leads',
+            presupuesto: '$500',
             conjuntos: [
                 {
-                    nombre: 'Público Abierto (Emprendedores)',
+                    nombre: 'Público: Inversionistas Colombia',
                     anuncios: [
-                        { nombre: 'AD1 - El problema de las 14 horas', formato: 'Reel', metodologia: 'PAS', contenido: 'Educativo', cpl: '$2.50' },
-                        { nombre: 'AD2 - Mi historia (Prueba Social)', formato: 'Carrusel', metodologia: 'Storytelling', contenido: 'Autoridad', cpl: '$1.80' }
+                        { nombre: 'Video: Testimonios', formato: 'Reels', metodologia: 'AIDA', contenido: 'Empieza con la duda...', cpl: '$1.2' }
                     ]
                 }
             ]
         });
 
-        // Planner
-        await Planner.create([
-            { proyecto: 'Lanzamiento X', contenido: 'AD1 - El problema...', formato: 'Reel', grabacion: '2024-10-25', publicacion: '2024-11-01', responsable: 'Equipo Video', estado: 'Por grabar' },
-            { proyecto: 'Lanzamiento X', contenido: 'AD2 - Mi historia', formato: 'Carrusel', grabacion: 'N/A', publicacion: '2024-11-03', responsable: 'Diseño', estado: 'En edición' }
-        ]);
-
-        // Metric
-        await Metrics.create(seedData.metricasGenerales);
-
-        return NextResponse.json({ message: 'Base de datos inicializada exitosamente' }, { status: 201 });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ message: 'Base de datos inicializada correctamente ✅' });
+    } catch (error) {
+        console.error("Error en SEED:", error);
+        return NextResponse.json({ error: 'Error al inicializar datos' }, { status: 500 });
     }
 }

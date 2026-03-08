@@ -1,46 +1,51 @@
+/**
+ * API: /api/proyectos
+ * Acción: Crea, actualiza o elimina proyectos en MongoDB.
+ * Maneja los métodos POST, PUT y DELETE.
+ */
+
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { Project } from '@/models';
+import connectDB from '@/lib/mongodb';
+import { Project } from '@/lib/models';
 
-export const dynamic = 'force-dynamic';
-
-// EDITAR Proyecto
-export async function PUT(req: Request) {
+// 1. CREAR UN NUEVO PROYECTO (POST)
+export async function POST(req: Request) {
     try {
-        await connectToDatabase();
-        const { id, ...data } = await req.json();
-
-        const updatedProject = await Project.findByIdAndUpdate(id, data, { new: true });
-
-        if (!updatedProject) {
-            return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
-        }
-
-        return NextResponse.json({ success: true, project: updatedProject });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const data = await req.json();
+        await connectDB();
+        const newProject = await Project.create({
+            ...data,
+            id: Date.now().toString() // Genera un ID único basado en el tiempo
+        });
+        return NextResponse.json(newProject);
+    } catch (error) {
+        return NextResponse.json({ error: 'Error al crear proyecto' }, { status: 500 });
     }
 }
 
-// ELIMINAR Proyecto
+// 2. ACTUALIZAR PROYECTO EXISTENTE (PUT)
+export async function PUT(req: Request) {
+    try {
+        const { id, ...data } = await req.json();
+        await connectDB();
+        const updated = await Project.findOneAndUpdate({ id }, data, { new: true });
+        if (!updated) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
+        return NextResponse.json(updated);
+    } catch (error) {
+        return NextResponse.json({ error: 'Error al actualizar proyecto' }, { status: 500 });
+    }
+}
+
+// 3. ELIMINAR PROYECTO (DELETE)
 export async function DELETE(req: Request) {
     try {
-        await connectToDatabase();
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
-
-        if (!id) {
-            return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
-        }
-
-        const deletedProject = await Project.findByIdAndDelete(id);
-
-        if (!deletedProject) {
-            return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
-        }
-
-        return NextResponse.json({ success: true, message: 'Proyecto eliminado' });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        await connectDB();
+        const deleted = await Project.findOneAndDelete({ id });
+        if (!deleted) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json({ error: 'Error al eliminar proyecto' }, { status: 500 });
     }
 }

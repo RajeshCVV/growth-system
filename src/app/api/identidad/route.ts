@@ -1,26 +1,32 @@
-import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { BrandIdentity } from '@/models';
+/**
+ * API: /api/identidad
+ * Acción: Actualiza la Identidad de Marca (ADN) y los Buyer Personas.
+ * Utiliza 'upsert' (actualizar o crear si no existe) basado en el empresaId.
+ */
 
-export const dynamic = 'force-dynamic';
+import { NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import { BrandIdentity } from '@/lib/models';
 
 export async function PUT(req: Request) {
     try {
-        await connectToDatabase();
+        // Obtenemos el empresaId y los nuevos datos del cuerpo del request
         const { empresaId, base, personas } = await req.json();
 
-        if (!empresaId) {
-            return NextResponse.json({ error: 'empresaId es requerido' }, { status: 400 });
-        }
+        // Conexión a MongoDB
+        await connectDB();
 
-        const updatedIdentity = await BrandIdentity.findOneAndUpdate(
+        // Buscamos por empresaId y actualizamos. 
+        // { upsert: true }: Si la empresa no tiene identidad aún, la crea automáticamente.
+        const updated = await BrandIdentity.findOneAndUpdate(
             { empresaId },
             { base, personas },
             { new: true, upsert: true }
         );
 
-        return NextResponse.json({ success: true, identity: updatedIdentity });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(updated);
+    } catch (error) {
+        console.error("Error en API PUT /api/identidad:", error);
+        return NextResponse.json({ error: 'Error al actualizar identidad' }, { status: 500 });
     }
 }
