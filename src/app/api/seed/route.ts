@@ -18,14 +18,15 @@ export async function POST() {
 
         console.log("Insertando Empresas...");
         await Company.create([
-            { empresaId: 'fortis', nombre: 'Fortress', logo: 'F', color: '#4f46e5' },
+            { empresaId: 'fortress', nombre: 'Fortress', logo: 'F', color: '#4f46e5' },
             { empresaId: 'crescendo', nombre: 'Crescendo', logo: 'C', color: '#10b981' }
         ]);
 
         console.log("Insertando Proyectos...");
         await Project.create([
-            { id: 'p1', nombre: 'Edificio Los Pinos', estado: 'Activo', responsable: 'Johan', ticket: '$120,000', empresaId: 'fortis', fechaCierre: '2024-12-31' },
-            { id: 'p2', nombre: 'Loteo El Sol', estado: 'En curso', responsable: 'Marta', ticket: '$85,000', empresaId: 'fortis', fechaCierre: '2024-11-20' }
+            { id: 'p1', nombre: 'Edificio Los Pinos', estado: 'Activo', responsable: 'Johan', ticket: '$120,000', empresaId: 'fortress', fechaCierre: '2024-12-31' },
+            { id: 'p2', nombre: 'Loteo El Sol', estado: 'En curso', responsable: 'Marta', ticket: '$85,000', empresaId: 'fortress', fechaCierre: '2024-11-20' },
+            { id: 'p3', nombre: 'Lanzamiento Marca', estado: 'Planificación', responsable: 'Johan', ticket: 'N/A', empresaId: 'crescendo', fechaCierre: '2024-10-15' }
         ]);
 
         console.log("Insertando Planner...");
@@ -36,15 +37,17 @@ export async function POST() {
         console.log("Insertando Identidad...");
         await BrandIdentity.create([
             {
-                empresaId: 'fortis',
-                base: { queEs: 'Test', nicho: 'Test', propuesta: 'Test', tono: 'Test' },
-                personas: []
+                empresaId: 'fortress',
+                base: { queEs: 'Agencia inmobiliaria premium focusing en ROI.', nicho: 'Inversionistas de bienes raíces.', propuesta: 'Vender más rápido con tecnología avanzada.', tono: 'Profesional y Disruptivo' },
+                personas: [
+                    { nombre: 'Inversionista Novato', edad: '25-35', problema: 'Miedo a perder capital', deseo: 'Libertad financiera', objecion: 'Falta de confianza' }
+                ]
             }
         ]);
 
         console.log("Insertando Estrategia...");
         await Strategy.create({
-            empresaId: 'fortis',
+            empresaId: 'fortress',
             nombre: 'Campaña Leads',
             objetivo: 'Leads',
             conjuntos: []
@@ -54,9 +57,6 @@ export async function POST() {
         return NextResponse.json({ message: 'Sistema inicializado correctamente ✅' });
     } catch (error: any) {
         console.error("ERROR CRÍTICO EN SEED:", error.message);
-        if (error.errors) {
-            console.error("DETALLES DE VALIDACIÓN:", Object.keys(error.errors));
-        }
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
