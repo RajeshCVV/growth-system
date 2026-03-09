@@ -6,25 +6,21 @@
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { BrandIdentity } from '@/models';
+// Modelos V3 no incluyen BrandIdentity de momento, mockeando la respuesta
+
 
 export async function PUT(req: Request) {
     try {
         // Obtenemos el empresaId y los nuevos datos del cuerpo del request
         const { empresaId, base, personas } = await req.json();
 
-        // Conexión a MongoDB
+        // Conexión a MongoDB (mantenemos para asegurar instancia)
         await connectDB();
 
-        // Buscamos por empresaId y actualizamos. 
-        // { upsert: true }: Si la empresa no tiene identidad aún, la crea automáticamente.
-        const updated = await BrandIdentity.findOneAndUpdate(
-            { empresaId },
-            { base, personas },
-            { new: true, upsert: true }
-        );
+        // [MOCK TEMPORAL V3 - LOGICA A IMPLEMENTAR LUEGO CON NUEVO MODELO]
+        console.log("Mock Identity Update V3 para empresa:", empresaId);
 
-        return NextResponse.json(updated);
+        return NextResponse.json({ success: true, base, personas, empresaId });
     } catch (error) {
         console.error("Error en API PUT /api/identidad:", error);
         return NextResponse.json({ error: 'Error al actualizar identidad' }, { status: 500 });

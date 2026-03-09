@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { Strategy } from '@/models';
+import { Campaign } from '@/models';
 
 // 1. ACTUALIZAR O CREAR ESTRATEGIA (PUT)
 export async function PUT(req: Request) {
@@ -13,8 +13,8 @@ export async function PUT(req: Request) {
         const { empresaId, ...data } = await req.json();
         await connectDB();
 
-        // Sincroniza los cambios en la estructura jerárquica de la campaña
-        const updated = await Strategy.findOneAndUpdate(
+        // Sincroniza los cambios en la jerarquía (Ahora con modelo Campaign V3)
+        const updated = await Campaign.findOneAndUpdate(
             { empresaId },
             data,
             { new: true, upsert: true }
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     try {
         const data = await req.json();
         await connectDB();
-        const newStrategy = await Strategy.create(data);
+        const newStrategy = await Campaign.create(data);
         return NextResponse.json(newStrategy);
     } catch (error) {
         return NextResponse.json({ error: 'Error al crear estrategia' }, { status: 500 });
@@ -44,7 +44,7 @@ export async function DELETE(req: Request) {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
         await connectDB();
-        await Strategy.findByIdAndDelete(id);
+        await Campaign.findByIdAndDelete(id);
         return NextResponse.json({ success: true });
     } catch (error) {
         return NextResponse.json({ error: 'Error al eliminar estrategia' }, { status: 500 });

@@ -6,14 +6,14 @@
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { Planner } from '@/models';
+import { Calendar } from '@/models';
 
 // 1. CREAR TAREA DE PLANNER (POST)
 export async function POST(req: Request) {
     try {
         const data = await req.json();
         await connectDB();
-        const newItem = await Planner.create({
+        const newItem = await Calendar.create({
             ...data,
             id: Date.now().toString()
         });
@@ -28,7 +28,7 @@ export async function PUT(req: Request) {
     try {
         const { id, ...data } = await req.json();
         await connectDB();
-        const updated = await Planner.findOneAndUpdate({ id }, data, { new: true });
+        const updated = await Calendar.findOneAndUpdate({ id }, data, { new: true });
         if (!updated) return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
         return NextResponse.json(updated);
     } catch (error) {
@@ -42,7 +42,7 @@ export async function DELETE(req: Request) {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
         await connectDB();
-        const deleted = await Planner.findOneAndDelete({ id });
+        const deleted = await Calendar.findOneAndDelete({ id });
         if (!deleted) return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
         return NextResponse.json({ success: true });
     } catch (error) {
