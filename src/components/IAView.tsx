@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { BrainCircuit, Sparkles, Wand2, RefreshCw, Zap, Video, Type, Image as ImageIcon } from 'lucide-react';
+import { BrainCircuit, Sparkles, Wand2, RefreshCw, Zap, Video, Type, Image as ImageIcon, X } from 'lucide-react';
 
 const Card = ({ children, className = '' }: any) => (
     <div className={`bg-white rounded-3xl border border-slate-100 shadow-sm transition-all hover:shadow-xl ${className}`}>
@@ -30,6 +30,7 @@ const Badge = ({ children, type = 'default' }: any) => {
 export default function IAView({ currentEmpresa }: any) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [selectedAction, setSelectedAction] = useState<string | null>(null);
+    const [responses, setResponses] = useState<Record<string, string>>({});
 
     const ACTIONS = [
         {
@@ -66,14 +67,30 @@ export default function IAView({ currentEmpresa }: any) {
         }
     ];
 
-    const handleGenerate = (id: string) => {
+    const handleGenerate = async (id: string) => {
         setIsGenerating(true);
         setSelectedAction(id);
-        // Simulamos la generación por unos segundos
-        setTimeout(() => {
+
+        try {
+            const res = await fetch('/api/ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ actionId: id, empresaContext: currentEmpresa })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setResponses(prev => ({ ...prev, [id]: data.message ? (data.message + "\n\n" + data.data) : data.data }));
+            } else {
+                alert('Motor IA Error: ' + data.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error de conexión con el AI Core.");
+        } finally {
             setIsGenerating(false);
-            alert('¡Generación completada para el módulo seleccionado! (Funcionalidad Simulada V1)');
-        }, 3500);
+            setSelectedAction(null);
+        }
     };
 
     return (
@@ -94,9 +111,9 @@ export default function IAView({ currentEmpresa }: any) {
                 {ACTIONS.map((action) => {
                     const Icon = action.icon;
                     return (
-                        <Card key={action.id} className="p-8 group cursor-pointer hover:border-violet-200" onClick={() => handleGenerate(action.id)}>
+                        <Card key={action.id} className="p-8 hover:border-violet-200">
                             <div className="flex gap-6 items-start">
-                                <div className={`w-16 h-16 rounded-3xl ${action.bg} ${action.color} flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform`}>
+                                <div className={`w-16 h-16 rounded-3xl ${action.bg} ${action.color} flex items-center justify-center shadow-inner transition-transform`}>
                                     <Icon size={32} />
                                 </div>
                                 <div className="flex-1">
@@ -104,10 +121,14 @@ export default function IAView({ currentEmpresa }: any) {
                                     <p className="text-sm text-slate-500 font-medium leading-relaxed">{action.desc}</p>
 
                                     <div className="mt-6 flex items-center gap-3">
-                                        <button className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isGenerating && selectedAction === action.id
-                                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                                : `bg-slate-50 ${action.color} hover:bg-slate-100 shadow-sm`
-                                            }`}>
+                                        <button
+                                            onClick={() => handleGenerate(action.id)}
+                                            disabled={isGenerating}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isGenerating && selectedAction === action.id
+                                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                    : `bg-slate-50 ${action.color} hover:bg-slate-100 hover:scale-105 active:scale-95 shadow-sm`
+                                                }`}
+                                        >
                                             {isGenerating && selectedAction === action.id ? (
                                                 <><RefreshCw size={14} className="animate-spin" /> PROCESANDO...</>
                                             ) : (
@@ -115,6 +136,26 @@ export default function IAView({ currentEmpresa }: any) {
                                             )}
                                         </button>
                                     </div>
+
+                                    {responses[action.id] && (
+                                        <div className="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-[11px] font-mono whitespace-pre-wrap text-slate-700 max-h-64 overflow-y-auto custom-scrollbar relative animate-in fade-in slide-in-from-top-2">
+                                            <div className="flex justify-between items-center mb-3 text-violet-600 border-b border-violet-100 pb-2 bg-slate-50 sticky top-0">
+                                                <strong className="flex items-center gap-1.5 uppercase tracking-widest text-[10px]"><Sparkles size={12} /> Resultado IA</strong>
+                                                <button
+                                                    className="p-1 hover:bg-violet-100 rounded-lg transition-colors text-violet-400 hover:text-violet-700"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setResponses(prev => { const n = { ...prev }; delete n[action.id]; return n; });
+                                                    }}
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                            <div className="leading-relaxed">
+                                                {responses[action.id]}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </Card>
