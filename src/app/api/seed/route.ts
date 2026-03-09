@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { Company, Project, EditorialContent, Calendar, Campaign, AdSet, Ad } from '@/models';
+import { Company, Project, EditorialContent, Calendar, Campaign, AdSet, Ad, Metric } from '@/models';
 
 export async function POST() {
     try {
@@ -15,7 +15,8 @@ export async function POST() {
             Calendar.deleteMany({}),
             Campaign.deleteMany({}),
             AdSet.deleteMany({}),
-            Ad.deleteMany({})
+            Ad.deleteMany({}),
+            Metric.deleteMany({})
         ]);
 
         console.log("Insertando Empresas Base...");
@@ -36,8 +37,18 @@ export async function POST() {
         ]);
 
         console.log("Insertando Motor de Pauta MOCK...");
-        await Campaign.create([
-            { empresa_id: 'fortress', nombre: 'Campaña Leads - Boulevard', objetivo: 'Leads', presupuesto: 5000000, estado: 'Borrador' }
+        const campMock = await Campaign.create({
+            empresa_id: 'fortress',
+            nombre: 'Campaña Leads - Boulevard',
+            objetivo: 'Leads',
+            presupuesto: 5000000,
+            estado: 'Borrador'
+        });
+
+        console.log("Insertando Métricas MOCK...");
+        await Metric.create([
+            { campana_id: campMock._id.toString(), fecha: '2024-03-01', spend: 1200000, leads: 240, impressions: 45000, clicks: 1200 },
+            { campana_id: campMock._id.toString(), fecha: '2024-03-02', spend: 800000, leads: 180, impressions: 38000, clicks: 950 }
         ]);
 
         console.log("SEED V3 completado con éxito");
