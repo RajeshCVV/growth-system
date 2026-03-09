@@ -13,13 +13,26 @@ export async function GET() {
         await connectDB();
 
         // 2. Realizamos las consultas en paralelo
-        const [companies, projects, contents, calendars, campaigns] = await Promise.all([
+        const [companies, projects, contents, calendars, campaignsRaw, adsetsRaw, adsRaw] = await Promise.all([
             Company.find({}),
             Project.find({}),
             EditorialContent.find({}),
             Calendar.find({}),
-            Campaign.find({})
+            Campaign.find({}),
+            AdSet.find({}),
+            Ad.find({})
         ]);
+
+        // 3. Reconstrucción del árbol relacional V3 en memoria para la UI temporal
+        const adsList = adsRaw.map(a => a.toObject());
+        const adSetList = adsetsRaw.map(s => {
+            const sObj = s.toObject();
+            return { ...sObj, anuncios: adsList.filter(a => a.conjunto_id === sObj._id.toString() || a.conjunto_id === sObj.id) };
+        });
+        const campaigns = campaignsRaw.map(c => {
+            const cObj = c.toObject();
+            return { ...cObj, conjuntos: adSetList.filter(s => s.campana_id === cObj._id.toString() || s.campana_id === cObj.id) };
+        });
 
         // Retornamos la respuesta JSON estructurada con datos V3
         return NextResponse.json({

@@ -5,22 +5,53 @@
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { Campaign } from '@/models';
+import { Campaign, AdSet, Ad } from '@/models';
 
 // 1. ACTUALIZAR O CREAR ESTRATEGIA (PUT)
 export async function PUT(req: Request) {
     try {
-        const { empresaId, ...data } = await req.json();
+        const { empresaId, conjuntos, ...campaignData } = await req.json();
         await connectDB();
 
-        // Sincroniza los cambios en la jerarquía (Ahora con modelo Campaign V3)
-        const updated = await Campaign.findOneAndUpdate(
-            { empresaId },
-            data,
+        // 1. Guardar/Actualizar la Campaña principal
+        let campaign = await Campaign.findOneAndUpdate(
+            { empresa_id: empresaId },
+            { ...campaignData, empresa_id: empresaId },
             { new: true, upsert: true }
         );
 
-        return NextResponse.json(updated);
+        // 2. Limpiar el historial relacional para evitar duplicados en la UI
+        await AdSet.deleteMany({ campana_id: campaign._id.toString() });
+        // (Sería ideal borrar los Ads también, pero los Ads antiguos quedarán huérfanos por ahora. Mejoraremos esto en el delete en cascada después).
+
+        // 3. Insertar los Conjuntos (AdSets) y Anuncios (Ads) iterativamente
+        if (conjuntos && Array.isArray(conjuntos)) {
+            for (const conjunto of conjuntos) {
+                const newAdSet = await AdSet.create({
+                    campana_id: campaign._id.toString(),
+                    nombre: conjunto.nombre,
+                    tipo_segmento: conjunto.tipo_segmento,
+                    audiencia: conjunto.audiencia,
+                    presupuesto: conjunto.presupuesto,
+                    estado: conjunto.estado
+                });
+
+                if (conjunto.anuncios && Array.isArray(conjunto.anuncios)) {
+                    for (const ad of conjunto.anuncios) {
+                        await Ad.create({
+                            conjunto_id: newAdSet._id.toString(),
+                            nombre: ad.nombre,
+                            formato: ad.formato,
+                            objetivo: ad.objetivo,
+                            estado: ad.estado,
+                            hook: ad.hook // Campo extra de ICreative fusionado temporalmente para la vista
+                        });
+                    }
+                }
+            }
+        }
+
+        return NextResponse.json({ success: true, campaign });
     } catch (error) {
         return NextResponse.json({ error: 'Error al actualizar estrategia' }, { status: 500 });
     }

@@ -13,10 +13,8 @@ export async function POST(req: Request) {
     try {
         const data = await req.json();
         await connectDB();
-        const newProject = await Project.create({
-            ...data,
-            id: Date.now().toString() // Genera un ID único basado en el tiempo
-        });
+        // Mongoose asigna _id automáticamente
+        const newProject = await Project.create(data);
         return NextResponse.json(newProject);
     } catch (error) {
         return NextResponse.json({ error: 'Error al crear proyecto' }, { status: 500 });
@@ -26,9 +24,10 @@ export async function POST(req: Request) {
 // 2. ACTUALIZAR PROYECTO EXISTENTE (PUT)
 export async function PUT(req: Request) {
     try {
-        const { id, ...data } = await req.json();
+        const { _id, id, ...data } = await req.json();
+        const documentId = _id || id;
         await connectDB();
-        const updated = await Project.findOneAndUpdate({ id }, data, { new: true });
+        const updated = await Project.findByIdAndUpdate(documentId, data, { new: true });
         if (!updated) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
         return NextResponse.json(updated);
     } catch (error) {
@@ -40,9 +39,9 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        const id = searchParams.get('id');
+        const idParam = searchParams.get('id');
         await connectDB();
-        const deleted = await Project.findOneAndDelete({ id });
+        const deleted = await Project.findByIdAndDelete(idParam);
         if (!deleted) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
         return NextResponse.json({ success: true });
     } catch (error) {

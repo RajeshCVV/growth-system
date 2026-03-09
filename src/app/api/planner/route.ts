@@ -13,10 +13,8 @@ export async function POST(req: Request) {
     try {
         const data = await req.json();
         await connectDB();
-        const newItem = await Calendar.create({
-            ...data,
-            id: Date.now().toString()
-        });
+        // Creamos la tarea, Mongoose le asignará su propio _id
+        const newItem = await Calendar.create(data);
         return NextResponse.json(newItem);
     } catch (error) {
         return NextResponse.json({ error: 'Error al crear tarea' }, { status: 500 });
@@ -26,9 +24,10 @@ export async function POST(req: Request) {
 // 2. ACTUALIZAR TAREA EXISTENTE (PUT)
 export async function PUT(req: Request) {
     try {
-        const { id, ...data } = await req.json();
+        const { _id, id, ...data } = await req.json();
+        const documentId = _id || id;
         await connectDB();
-        const updated = await Calendar.findOneAndUpdate({ id }, data, { new: true });
+        const updated = await Calendar.findByIdAndUpdate(documentId, data, { new: true });
         if (!updated) return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
         return NextResponse.json(updated);
     } catch (error) {
@@ -40,9 +39,9 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        const id = searchParams.get('id');
+        const idParam = searchParams.get('id');
         await connectDB();
-        const deleted = await Calendar.findOneAndDelete({ id });
+        const deleted = await Calendar.findByIdAndDelete(idParam);
         if (!deleted) return NextResponse.json({ error: 'Tarea no encontrada' }, { status: 404 });
         return NextResponse.json({ success: true });
     } catch (error) {
