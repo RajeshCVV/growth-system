@@ -76,7 +76,7 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
-        console.error("Error crítico en /api/ai:", error.message);
-        return NextResponse.json({ success: false, error: "Error interno del motor IA." }, { status: 500 });
+        console.error("Error crítico en /api/ai:", error.message || error);
+        return NextResponse.json({ success: false, error: error.message || "Error interno del motor IA." }, { status: 500 });
     }
 }
