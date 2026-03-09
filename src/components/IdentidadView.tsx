@@ -23,7 +23,7 @@ const Badge = ({ children, type = 'default' }: any) => {
 };
 
 export default function IdentidadView({ currentEmpresa, mockData, refreshData }: any) {
-    const rawId = mockData.identidad[currentEmpresa.id];
+    const rawId = mockData?.identidad?.[currentEmpresa?.id] || null;
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
 
